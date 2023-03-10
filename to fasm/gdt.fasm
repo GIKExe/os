@@ -1,0 +1,37 @@
+macro wGDT _limit, _base, _access, _flags
+{	
+	; 2 байта ограничение
+	dw _limit and 0xFFFF
+
+	; 3 байта база
+	dw _base and 0xFFFF
+	db (_base shr 16) and 0xFF
+
+	; байт доступ
+	db _access
+
+	; 4 бита ограничение и 4 бита флаги
+	db ((_flags and 0xF) shl 4) + ((_limit shr 16) and 0xF)
+
+	; байт база
+	db (_base shr 24)
+}
+
+
+; https://wiki.osdev.org/Global_Descriptor_Table
+GDT:
+	; пустой дескриптор
+	dq 0
+
+	; дескриптор кода (селектор = 0x08)
+	wGDT 0xFFFFF, 0, 10011010b, 1100b
+
+	; дескриптор данных (селектор = 0x10)
+	wGDT 0xFFFFF, 0, 10010010b, 1100b
+
+	; дескриптор видеобуфера (селектор = 0x18)
+	wGDT 0xFFFF, 0xB8000, 10010010b, 0100b
+
+GDTR:
+	dw $ - GDT - 1
+	dd GDT

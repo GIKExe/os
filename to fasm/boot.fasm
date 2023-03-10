@@ -1,0 +1,168 @@
+use16
+org 0x7c00
+
+mov ah, 0x00
+mov al, 3
+int 0x10
+
+mov ah, 0x02
+mov al, 16 ; количество секторов для чтения
+mov cx, 2 ; сектор старта чтения (начиная от 1, не 0)
+mov dx, 0
+xor bx, bx
+mov es, bx
+mov bx, start
+int 0x13
+
+jmp start
+
+times 510 + $$ - $ db 0
+dw 0xAA55
+
+start:
+	mov ax, cs
+	mov ds, ax
+	mov es, ax
+	mov ss, ax
+	
+	mov sp, start
+	mov bp, sp
+	
+	; Включаем линию A20
+	in al, 0x92
+	or al, 2
+	out 0x92, al
+ 
+	; Выключаем ВСЕ прерывания
+	cli
+	in al, 0x70
+	or al, 0x80
+	out 0x70, al ; Disable non-maskable interrupts
+	
+	; Загружаем Таблицы Дескрепторов
+	lgdt [GDTR]
+	; lidt [IDTR]
+
+	mov eax, cr0
+	or  al, 1
+	mov cr0, eax
+ 
+	jmp 0x8:protected_entry
+
+macro print _conf, _data
+{
+	mov ax, _conf
+	push ax
+	mov eax, _data
+	push eax
+	call f_print
+}
+
+use32
+protected_entry:
+	mov ax, 16
+	mov ds, ax
+	mov ss, ax
+
+	mov ax, 24
+	mov es, ax
+
+	; Включить прерывание клавиатуры
+	; in al, 0x21
+	; and al, 11111101b
+	; out 0x21, al
+	
+	; Включить ВСЕ прерывания
+	; in  al, 0x70
+	; and al, 0x7F
+	; out 0x70, al
+	; sti
+
+	print 0x0004, '?'
+	; mov byte [es:0], '?'
+	; mov byte [es:1], 4
+
+	print 0x0004, '4'
+	; mov byte [es:2], 'Z'
+	; mov byte [es:3], 14
+
+	print 0x010F, msg
+
+	jmp $
+
+msg: db ' TEST', 0
+
+macro wGDT _limit, _base, _access, _flags
+{	
+	; 2 байта ограничение
+	dw _limit and 0xFFFF
+
+	; 3 байта база
+	dw _base and 0xFFFF
+	db (_base shr 16) and 0xFF
+
+	; байт доступ
+	db _access
+
+	; 4 бита ограничение и 4 бита флаги
+	db ((_flags and 0xF) shl 4) + ((_limit shr 16) and 0xF)
+
+	; байт база
+	db (_base shr 24)
+}
+
+; https://wiki.osdev.org/Global_Descriptor_Table
+GDT:
+	; пустой дескриптор
+	dq 0
+
+	; дескриптор кода (селектор = 0x08)
+	wGDT 0xFFFFF, 0, 10011010b, 1100b
+
+	; дескриптор данных (селектор = 0x10)
+	wGDT 0xFFFFF, 0, 10010010b, 1100b
+
+	; дескриптор видеобуфера (селектор = 0x18)
+	wGDT 0xFFFF, 0xB8000, 10010010b, 0100b
+
+GDTR:
+	dw $ - GDT - 1
+	dd GDT
+
+cur dw 0
+
+f_print:
+	mov bx, word [cur]
+	pop ax
+
+	cmp ah, 0
+	je .sumbol
+
+	cmp ah, 1
+	je .string
+
+	jmp .return
+
+.sumbol:
+	mov byte [es:bx+1], al
+	pop eax
+	mov byte [es:bx], al
+	add word [cur], 2
+	jmp .return
+
+.string:
+	pop esi
+.string_loop:
+	mov ah, byte [esi]
+	cmp ah, 0
+	je .string_end
+	mov byte [es:bx], ah
+	mov byte [es:bx+1], al
+	add bx, 2
+	inc esi
+	jmp .string_loop
+.string_end:
+	mov word [cur], bx
+
+.return:
+	ret
