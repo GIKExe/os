@@ -6,6 +6,11 @@ a2 dd 0
 a3 dd 0
 a4 dd 0
 
+b1 dd 0
+b2 dd 0
+b3 dd 0
+b4 dd 0
+
 include "func/print.fasm"
 include "keyboard.fasm"
 
@@ -17,8 +22,10 @@ protected_entry:
 	mov ax, 24
 	mov es, ax
 
-	print 1, msg
-	print 1, msg._2
+	print 2, msg.name
+	print 1, 0
+	print 2, msg.version
+	print 1, 0
 
 	; jmp $
 
@@ -86,8 +93,11 @@ protected_entry:
 
 	jmp $
 
-msg db 15, 'IETTCQV OS ', 0
-._2 db 2, 'v0.0.1', 0
+msg:
+.name db 15, 'IETTCQV OS', 0
+.version db 2, 'v0.0.1', 0
+.test db 15, 'TEST', 0
+
 isp db 0
 
 include "IDT.fasm"
@@ -136,7 +146,6 @@ irq1_handler:
 	push ax
 	push edi
    
-   	del eax
 	in al, 0x60
 
 ; <----------------------------------------------
@@ -178,11 +187,9 @@ irq1_handler:
 ; ---------------------------------------------->
    
 @@:
-	del ecx
-	mov ch, 14
-	mov cl, al
-	print 2, ecx
-	print 0, 0
+	mov ah, 14
+	print 3, eax
+	print 1, 0
 
 	; convert scan-code to ASCII-code
 	dec al
