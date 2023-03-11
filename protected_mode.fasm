@@ -28,13 +28,13 @@ align 8
 ; P=1 (the segment is present in physical memory)
 ; D=1 (the size of gate is 32 bit)
 ; DPL=0 (descriptor privilege level = 0)
-macro INTERRUPT_GATE_DESCRIPTOR _Selector, _Offset
+macro INTERRUPT_GATE_DESCRIPTOR _selector, _offset
 {
-    dw _Offset and 0xFFFF ; Offset[0:15]
-    dw _Selector          ; Selector
+    dw _offset and 0xFFFF ; Offset[0:15]
+    dw _selector          ; Selector
     db 0                  ; reserved
     db 10001110b          ; P DPL[0:1] 0 D 1 1 0
-    dw _Offset shr 16     ; Offset[16:31]
+    dw _offset shr 16     ; Offset[16:31]
 }
 
 idt:

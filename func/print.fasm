@@ -1,0 +1,75 @@
+cur dw 0
+hex db '0123456789ABCDEF'
+
+macro print _type, _data
+{	
+	mov byte [a1], _type
+	mov dword [a2], _data
+	pushf
+	push ax bx cx esi
+	call f_print
+	pop esi cx bx ax
+	popf
+}
+
+f_print:
+	mov bx, word [cur]
+	mov al, byte [a1]
+
+	cmp al, 0
+	je .sumbol
+
+	cmp al, 1
+	je .string
+
+	cmp al, 2
+	je ._byte
+
+	ret
+
+.sumbol:
+	mov ax, word [a2]    ; читаем байт и цвет из аргумента
+	mov word [es:bx], ax ; записываем байт и цвет в буффер экрана
+	add word [cur], 2    ; переходим к следущему байту буффера экрана
+	ret
+
+.string:
+	mov esi, dword [a2]  ; читаем аргумент - адрес
+	mov ah, byte [esi]   ; читаем первый байт - цвет
+	mov byte [a2+1], ah  ; записываем цвет в аргумент для подфункции
+	inc esi
+.string_loop:
+	mov al, byte [esi]   ; читаем байт из строки
+	cmp al, 0            ; если байт = 0, то выходим
+	je .string_end
+	mov byte [a2], al    ; записываем байт в аргумент для подфункции
+	call .sumbol         ; вызываем подфункцию
+	add bx, 2            ; переходим к следущему байту буффера экрана
+	inc esi              ; переходим к следущему байту строки
+	jmp .string_loop
+.string_end:
+	mov word [cur], bx
+	ret
+
+._byte:
+	del ax
+	mov al, byte [a2]
+	mov bl, 16
+	div bl
+	; AH - остаток от деления, второй символ (чтение с лева на право, пример: 0x10 = 16, 0x01 = 1)
+	; AL - частное, первый символ
+
+	movzx si, al
+	mov al, byte [si+hex]
+
+	mov bx, word [cur]
+	mov byte [a2], al
+	call .sumbol
+
+	movzx si, ah
+	mov ah, byte [si+hex]
+
+	mov bx, word [cur]
+	mov byte [a2], ah
+	call .sumbol
+	ret

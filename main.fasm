@@ -1,0 +1,209 @@
+include "boot.fasm"
+
+use32
+a1 dd 0
+a2 dd 0
+a3 dd 0
+a4 dd 0
+
+include "func/print.fasm"
+include "keyboard.fasm"
+
+protected_entry:
+	mov ax, 16
+	mov ds, ax
+	mov ss, ax
+
+	mov ax, 24
+	mov es, ax
+
+	print 1, msg
+	print 1, msg._2
+
+	; jmp $
+
+	; Disable scan-code translation to set2
+	; push word KEYBOARD_CONTROLLER_COMMAND_READ_COMMAND_BYTE
+	; call Keyboard_SendCommand
+	; call Keyboard_ReadOutputBuffer
+	; and al, not KEYBOARD_COMMAND_BYTE_XLAT
+	; push word KEYBOARD_CONTROLLER_COMMAND_WRITE_COMMAND_BYTE
+	; call Keyboard_SendCommand
+	; push ax
+	; call Keyboard_WriteInputBuffer
+
+	lidt [IDTR]
+
+	; Initialize Programmable Interrupt Controller (PIC)
+	iSr_master equ 0x20
+	iMr_master equ 0x21
+   
+	iSr_slave equ 0xA0    
+	iMr_slave equ 0xA1
+   
+	; -------- master i8259A PIC initialization --------
+	mov al, 00010001b
+	out iSr_master, al
+   
+	; Define interrupt vector for the 0th line of PIC
+	mov al, 0x20 ; (interrupt vector No 32)
+	out iMr_master, al
+   
+	; Bit mask defines the line of master i8259A to which slave i8259A is connected
+	mov al, 00000100b ; (line No 2)
+	out iMr_master, al
+   
+	mov al, 00000001b
+	out iMr_master, al
+   
+	; -------- slave i8259A PIC initialization ---------
+	mov al, 00010001b
+	out iSr_slave, al
+   
+	; Define interrupt vector for the 0th line of PIC
+	mov al, 0x28 ; (interrupt vector No 40)
+	out iMr_slave, al
+   
+	; Defines the line number through which slave i8259A is connected to master i8259A
+	mov al, 00000010b ; (line No 2)
+	out iMr_slave, al
+   
+	mov al, 00000001b
+	out iMr_slave, al
+
+	; Включить прерывание клавиатуры
+	in al, 0x21
+	and al, 11111101b
+	out 0x21, al
+
+	; Включить немаскируемые прерывания
+	in  al, 0x70
+	and al, 0x7F
+	out 0x70, al
+
+	; Включить маскируемые прерывания
+	sti
+
+	jmp $
+
+msg db 15, 'IETTCQV OS ', 0
+._2 db 2, 'v0.0.1', 0
+isp db 0
+
+include "IDT.fasm"
+; -------------------------------------------- INTERRUPT HANDLERS ----------------------------------------------
+; ---- End of Interrupt -----------
+int_EOI:
+	push ax
+	; Reset interrupt controllers
+	mov al, 0x20
+	out iSr_master, al
+	out iSr_slave, al
+	pop ax
+	iretd
+
+; ---- General Protection Fault ---
+; exGP_handler:
+;     pop  eax ; pop error code
+;     push 0
+;     push 0
+;     push gp_message
+;     call PrintString
+;     iretd      
+
+; ---- System Timer ---------------
+; irq0_handler:
+;     mov byte [es:159], 0x07
+;     inc byte [timer_counter]    
+;     cmp byte [timer_counter], 18
+;     jz @f
+;     jmp int_EOI
+; @@:
+;     mov byte [timer_counter], 0
+;     cmp byte [es:158], '/'
+;     jz @f
+;     mov byte [es:158], '/'
+;     jmp int_EOI
+; @@:
+;     mov byte [es:158], '\'
+;     jmp int_EOI
+
+KEYBOARD_KEY_IS_SPECIAL_FLAG equ 00000001b
+KEYBOARD_KEY_IS_BREAK_FLAG   equ 00000010b
+scan_code_flags db 0
+; ---- Keyboard Controller --------
+irq1_handler:
+	push ax
+	push edi
+   
+   	del eax
+	in al, 0x60
+
+; <----------------------------------------------
+	;if(al == KEYBOARD_SPECIAL_KEY)
+	;{
+	;    scan_code_flags |= KEYBOARD_KEY_IS_SPECIAL_FLAG;
+	;    return;
+	;}
+	;else if(al == KEYBOARD_BREAK_KEY)
+	;{
+	;    scan_code_flags |= KEYBOARD_KEY_IS_BREAK_FLAG;
+	;    return;
+	;}
+	;else if((scan_code_flags & KEYBOARD_KEY_IS_SPECIAL_FLAG) != 0 || (scan_code_flags & KEYBOARD_KEY_IS_BREAK_FLAG) != 0)
+	;{
+	;    scan_code_flags = 0;
+	;    return;
+	;}
+   
+	cmp al, KEYBOARD_SPECIAL_KEY
+	jnz @f
+	or byte [scan_code_flags], KEYBOARD_KEY_IS_SPECIAL_FLAG
+	jmp .exit
+@@:
+	cmp al, KEYBOARD_BREAK_KEY
+	jnz @f
+	or byte [scan_code_flags], KEYBOARD_KEY_IS_BREAK_FLAG
+	jmp .exit
+@@:
+	test [scan_code_flags], KEYBOARD_KEY_IS_SPECIAL_FLAG
+	jz @f
+	mov [scan_code_flags], 0
+	jmp .exit
+@@:
+	test [scan_code_flags], KEYBOARD_KEY_IS_BREAK_FLAG
+	jz @f
+	mov [scan_code_flags], 0
+	jmp .exit
+; ---------------------------------------------->
+   
+@@:
+	del ecx
+	mov ch, 14
+	mov cl, al
+	print 2, ecx
+	print 0, 0
+
+	; convert scan-code to ASCII-code
+	dec al
+	; cmp al, 0x54 ; выход если смещение больше таблицы символов
+	; jg .exit
+
+	movzx edi, al
+	mov al, [edi+SCAN_CODE_SET1]
+	cmp al, 0
+	jz .exit
+
+	; print symbol on the screen
+	; mov ah, 0x07 ; symbol attribute (light gray on black)
+	; mov word [es:160], ax
+
+	; advance cursor position (if(++cursor >= 2000) cursor = 0;)
+	; inc dword [cursor]
+	; cmp dword [cursor], 2000
+	; jb .exit
+	; mov dword [cursor], 0
+.exit:
+	pop  edi
+	pop  ax
+	jmp  int_EOI

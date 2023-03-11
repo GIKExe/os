@@ -1,0 +1,48 @@
+
+
+macro del _value
+{
+	xor _value, _value
+}
+
+macro wGDT _limit, _base, _access, _flags
+{	
+	; 2 байта ограничение
+	dw _limit and 0xFFFF
+
+	; 3 байта база
+	dw _base and 0xFFFF
+	db (_base shr 16) and 0xFF
+
+	; байт доступ
+	db _access
+
+	; 4 бита ограничение и 4 бита флаги
+	db ((_flags and 0xF) shl 4) + ((_limit shr 16) and 0xF)
+
+	; байт база
+	db (_base shr 24)
+}
+
+; Interrupt gate descriptor format
+; BITS  | SIZE | FIELD
+; ------+------+------
+; 0-15  |  16  | Offset[0:15]
+; 16-31 |  16  | Selector[0:15]
+; 32-39 |   8  | reserved
+; 40-47 |   8  | P DPL[0:1] 0 D 1 1 0
+; 48-63 |  16  | Offset[16:31]
+
+; The following macro defines an interrupt gate descriptor.
+; The following assumtions take place:
+; P=1 (the segment is present in physical memory)
+; D=1 (the size of gate is 32 bit)
+; DPL=0 (descriptor privilege level = 0)
+macro wIDT _selector, _offset
+{
+	dw _offset and 0xFFFF ; Offset[0:15]
+	dw _selector          ; Selector
+	db 0                  ; reserved
+	db 10001110b          ; P DPL[0:1] 0 D 1 1 0
+	dw _offset shr 16     ; Offset[16:31]
+}
