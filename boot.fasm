@@ -1,9 +1,7 @@
 use16
 org 0x7c00
 
-include "macros.fasm"
-
-; установка видеорежима 3. 80х25 символов
+; установка видеорежима 3 = 80х25 символов
 mov ah, 0x00
 mov al, 3
 int 0x10
@@ -17,38 +15,6 @@ xor bx, bx
 mov es, bx
 mov bx, 0x7e00 ; адрес на который будут записаны данные
 int 0x13
-
-; переход в защищённый режим (32 бита)
-mov ax, cs
-mov ds, ax
-mov es, ax
-mov ss, ax
-
-mov sp, 0x7e00 ; вершина стака
-mov bp, sp
-	
-; Включаем линию A20
-in al, 0x92
-or al, 2
-out 0x92, al
-
-; Выключаем ВСЕ прерывания
-cli
-in al, 0x70
-or al, 0x80
-out 0x70, al ; Disable non-maskable interrupts
-	
-; Загружаем Таблицы Дескрепторов
-lgdt [GDTR]
-; lidt [IDTR]
-
-mov eax, cr0
-or  al, 1
-mov cr0, eax
- 
-jmp 0x8:protected_entry
-
-include "bootGDT.fasm"
 
 times 510 + $$ - $ db 0
 dw 0xAA55

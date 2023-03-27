@@ -1,0 +1,106 @@
+cursor dd 0
+hex_table db '0123456789ABCDEF'
+
+macro print sumbol, color
+{	
+	mov byte [f_print.d], sumbol
+	mov byte [f_print.d + 1], color
+	call f_print
+}
+
+f_print:
+	pushf
+	push ebx
+
+.main:
+	mov ebx, dword [cursor]
+	push word [.d]          ; читаем символ и цвет
+	pop word [es:ebx]       ; записываем в буффер экрана
+	
+.return:
+	add dword [cursor], 2
+	pop ebx
+	popf
+	ret
+
+.d dw 0
+
+
+macro prints addres
+{
+	mov dword [f_prints.d], addres
+	call f_prints
+}
+
+f_prints:
+	pushf
+	push ax ebx esi
+
+.main:
+	mov ebx, dword [cursor]
+	mov esi, dword [f_prints.d]  ; читаем адрес
+	mov ah, byte [esi]           ; читаем первый байт - цвет
+	inc esi
+
+@@:
+	mov al, byte [esi]           ; читаем байт из строки
+	inc esi                      ; переходим к следущему байту
+
+	cmp al, 0                    ; если байт = 0, то выходим
+	je .return
+
+	mov word [es:ebx], ax
+	add ebx, 2
+
+	jmp @b
+
+.return:
+	mov dword [cursor], ebx
+	pop esi ebx ax
+	popf
+	ret
+
+.d dd 0
+
+
+macro printb int8, color
+{
+	mov byte [f_printb.d], int8
+	mov byte [f_printb.d + 1], color
+	call f_printb
+}
+
+f_printb:
+	pushf
+	push ax bx esi
+
+.main:
+	; делим байт на 2 части
+	mov ah, 0
+	mov al, byte [f_printb.d]
+	mov bl, 16
+	div bl
+
+	; переводим числа в символы
+	movzx esi, al
+	mov al, byte [hex_table+esi]
+	movzx esi, ah
+	mov bl, byte [hex_table+esi]
+	
+	; записываем цвет
+	mov bh, byte [f_printb.d + 1]
+	mov ah, byte [f_printb.d + 1]
+
+	; записываем в буффер экрана
+	mov esi, dword [cursor]
+	mov word [es:esi], ax
+	add esi, 2
+	mov word [es:esi], bx
+
+.return:
+	add dword [cursor], 4
+	pop esi bx ax
+	popf
+	ret
+
+.d dw 0

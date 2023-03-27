@@ -1,9 +1,7 @@
 
 
-macro del _value
-{
-	xor _value, _value
-}
+macro del arg { xor arg, arg }
+; macro mpop [reg] { reverse pop reg }
 
 macro wGDT _limit, _base, _access, _flags
 {	
