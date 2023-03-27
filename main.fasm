@@ -2,8 +2,10 @@ include "boot.fasm"
 include "pm.fasm"
 
 jmp main
-include "key.fasm"
 include "print.fasm"
+dq 0
+include "key.fasm"
+dq 0
 
 main:
 	lidt [IDTR]
@@ -14,10 +16,10 @@ main:
 
 key_print:
 	mov esi, 0
-	mov dword [cursor], 0
+	; mov dword [cursor], 0
 
 .main:
-	cmp dword [cursor], 4000 ; 1310 - лимит для отображения данных в AX 
+	cmp dword [cursor], 4000; 1310 - лимит для отображения данных в AX 
 	jb @f
 	mov dword [cursor], 0
 @@:
@@ -25,34 +27,85 @@ key_print:
 	jb @f
 	mov esi, 0
 @@:
-	; mov ax, si 
-	; printb al, 14
-	; print 0, 0
-
 	mov ax, word [esi+key]
 	add esi, 2
-
-	; printb al, 4
-	; printb ah, 14
-	; print 0, 0
-
-	cmp al, 1
-	jne .main
 
 	cmp ah, 0
 	je .main
 
-	print ah, 15
-	
+	cmp al, 0
+	je .main
+
+	cmp al, 8
+	je .back_space
+
+	cmp al, 0x18
+	je .up
+
+	cmp al, 0x19
+	je .down
+
+	cmp al, 0x1A
+	je .right
+
+	cmp al, 0x1B
+	je .left
+
+	print al, 15
+
+.main_end:
+	mov ax, word [cursor]
+	div word [_2]
+	move ax
+
+	dec byte [esi+key-1]
 	jmp .main
+
+.back_space:
+	cmp dword [cursor], 0
+	je .main_end
+
+	sub dword [cursor], 2
+	print 0, 0
+	sub dword [cursor], 2
+	jmp .main_end
+
+.up:
+	cmp dword [cursor], 80*2
+	jb .main_end
+
+	sub dword [cursor], 80*2
+	jmp .main_end
+
+.down:
+	cmp dword [cursor], (1999-81)*2
+	ja .main_end
+
+	add dword [cursor], 80*2
+	jmp .main_end
+
+.left:
+	cmp dword [cursor], 0
+	je .main_end
+
+	sub dword [cursor], 2
+	jmp .main_end
+
+.right:
+	cmp dword [cursor], 1999*2
+	je .main_end
+
+	add dword [cursor], 2
+	jmp .main_end
 
 msg:
 .name db 15, 'IETTCQV OS', 0
 .version db 2, 'v0.0.1', 0
 
-_2 db 2
+_2 dw 2
 _10 db 10
 _16 db 16
+_80 db 80
 
 include "IDT.fasm"
 
@@ -79,20 +132,13 @@ irq1_handler:
     jne @f
     jmp .return
 @@:
-	cmp al, 0x80
-	jb .down
-	sub al, 0x80
-
-.up: ; отпускание клавиши
-	mul byte [_2]
-	movzx esi, al
-	mov byte [esi+key], 0	
-	jmp .return
+	cmp al, 0x7F
+	ja .return
 
 .down: ; нажатие клавиши
 	mul byte [_2]
 	movzx esi, al
-	mov byte [esi+key], 1
+	inc byte [esi+key+1]
 
 .return:
 	pop esi ax
