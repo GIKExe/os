@@ -4,24 +4,24 @@ void kmain(void)
 	const char *str = "my first kernel";
 	char *vidmem = (char*)0xb8000; 	//видео пямять начинается здесь
 	unsigned int i = 0;
-	unsigned int j = 0;
+	unsigned int cursor = 0;
 
 	// этот цикл очищает экран
-	while(j < 80 * 25 * 2) {
-		vidmem[j] = ' ';    // пустой символ
-		vidmem[j+1] = 0x07; // байт атрибутов
-		j = j + 2;
+	while(cursor < 80 * 25 * 2) {
+		vidmem[cursor] = ' ';    // пустой символ
+		vidmem[cursor+1] = 0x07; // байт атрибутов
+		cursor = cursor + 2;
 	}
 
-	j = 0;
+	cursor = 0;
 
 	// в этом цикле строка записывается в видео память 
-	while(str[j] != '\0') {
+	while(str[i] != '\0') {
 		/* ascii отображение */
-		vidmem[i] = str[j];
-		vidmem[i+1] = 0x07;
-		++j;
-		i = i + 2;
+		vidmem[cursor] = str[i];
+		vidmem[cursor+1] = 0x07;
+		++i;
+		cursor = cursor + 2;
 	}
 	return;
 }

@@ -1,5 +1,11 @@
 %include "boot.nasm"
 %include "pm.nasm"
 
-mov word [es:0], (4 << 8) + 'Y'
-hlt
+section .text
+
+global start
+extern kmain   ;kmain определена в C-файле
+
+start:
+	call kmain
+	hlt        ;остановка процессора
