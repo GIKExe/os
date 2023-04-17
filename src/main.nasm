@@ -1,17 +1,10 @@
-include "boot.fasm"
-include "pm.fasm"
+%include "boot.nasm"
+%include "pm.nasm"
 
-format ELF
-extrn kmain
-entry main
+lidt [IDTR]
+hlt
 
-jmp main
-include "IDT.fasm"
-
-main:
-	lidt [IDTR]
-	call kmain
-	hlt
+%include "IDT.nasm"
 
 int_EOI:
 	push ax
@@ -25,7 +18,8 @@ int_EOI:
 KEYBOARD_SPECIAL_KEY equ 0xE0
 irq1_handler:
 	pushf
-	push ax esi
+	push ax
+	push esi
 	xor ax, ax
 	xor esi, esi
 	
@@ -36,6 +30,7 @@ irq1_handler:
 	; тут надо сохранять символ
 
 .return:
-	pop esi ax
+	pop esi
+	pop ax
 	popf
 	jmp int_EOI

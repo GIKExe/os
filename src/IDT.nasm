@@ -1,5 +1,12 @@
 
-CODE_SELECTOR = 0x8
+%macro wIDT 2
+	dw (%2 - $$) & 0xFFFF
+	dw %1
+	db 0, 10001110b
+	dw (%2 - $$) >> 16
+%endmacro
+
+CODE_SELECTOR equ 0x8
 IDT:
 	dq 0 ; 0    #DE   Fault        Error code No     Divide Error
 	dq 0 ; 1    #DB   Fault/Trap   Error code No     Debug Exception (For Intel use only)
@@ -51,7 +58,31 @@ IDT:
 	wIDT CODE_SELECTOR, int_EOI      ; 45    IRQ 13   CPU co-processor  or  integrated floating point unit  or  inter-processor interrupt
 	wIDT CODE_SELECTOR, int_EOI      ; 46    IRQ 14   Primary ATA channel (ATA interface usually serves hard disk drives and CD drives)
 	wIDT CODE_SELECTOR, int_EOI      ; 47    IRQ 15   Secondary ATA channel
-   
+  
+; Interrupt gate descriptor format
+; BITS  | SIZE | FIELD
+; ------+------+------
+; 0-15  |  16  | Offset[0:15]
+; 16-31 |  16  | Selector[0:15]
+; 32-39 |   8  | reserved
+; 40-47 |   8  | P DPL[0:1] 0 D 1 1 0
+; 48-63 |  16  | Offset[16:31]
+
+; The following macro defines an interrupt gate descriptor.
+; The following assumtions take place:
+; P=1 (the segment is present in physical memory)
+; D=1 (the size of gate is 32 bit)
+; DPL=0 (descriptor privilege level = 0)
+
+; macro wIDT _selector, _offset
+; {
+; 	dw _offset and 0xFFFF ; Offset[0:15]
+; 	dw _selector          ; Selector
+; 	db 0                  ; reserved
+; 	db 10001110b          ; P DPL[0:1] 0 D 1 1 0
+; 	dw _offset shr 16     ; Offset[16:31]
+; }
+
 IDTR:
 	dw $ - IDT - 1 ; 16-bit limit of the interrupt descriptor table
 	dd IDT         ; 32-bit base address of the interrupt descriptor table

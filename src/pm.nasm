@@ -54,7 +54,7 @@ GDTR:
 
 
 
-use32
+[BITS 32]
 protected_entry:
 	mov ax, 16
 	mov ds, ax
