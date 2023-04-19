@@ -47,13 +47,13 @@
 
 ; The following macro defines an interrupt gate descriptor.
 ; The following assumtions take place:
-; P=1 (the segment is present in physical memory)
-; D=1 (the size of gate is 32 bit)
+; P=1 (сегмент присутствует в физической памяти)
+; D=1 (размер элемента управления составляет 32 бита)
 ; DPL=0 (descriptor privilege level = 0)
 
 %macro wIDT 2
-	dw (%2 - $$) & 0xFFFF
+	dw (%2 - $$ + 0x7C00) & 0xFFFF
 	dw %1
 	db 0, 10001110b
-	dw (%2 - $$) >> 16
+	dw (%2 - $$ + 0x7C00) >> 16
 %endmacro

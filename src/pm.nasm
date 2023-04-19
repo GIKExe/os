@@ -29,6 +29,7 @@ mov cr0, eax
  
 jmp 0x8:protected_entry
 
+
 ; https://wiki.osdev.org/Global_Descriptor_Table
 GDT:
 	; пустой
@@ -48,6 +49,7 @@ GDTR:
 	dd GDT
 
 
+db 'IDT'
 CODE_SELECTOR equ 0x8
 IDT:
 	dq 0 ; 0    #DE   Fault        Error code No     Divide Error
@@ -100,10 +102,18 @@ IDT:
 	wIDT CODE_SELECTOR, int_EOI      ; 45    IRQ 13   CPU co-processor  or  integrated floating point unit  or  inter-processor interrupt
 	wIDT CODE_SELECTOR, int_EOI      ; 46    IRQ 14   Primary ATA channel (ATA interface usually serves hard disk drives and CD drives)
 	wIDT CODE_SELECTOR, int_EOI      ; 47    IRQ 15   Secondary ATA channel
-  
+
 IDTR:
 	dw $ - IDT - 1 ; 16-bit limit of the interrupt descriptor table
 	dd IDT         ; 32-bit base address of the interrupt descriptor table
+
+
+[BITS 32]
+iSr_master equ 0x20
+iMr_master equ 0x21
+	   
+iSr_slave equ 0xA0    
+iMr_slave equ 0xA1
 
 int_EOI:
 	push ax
@@ -118,22 +128,29 @@ KEYBOARD_SPECIAL_KEY equ 0xE0
 
 irq1_handler:
 	pushf
-	mpush ax, esi
+	mpush ax, bx
 	del ax
-	del esi
 
 .main:
 	in al, 0x60
 	cmp al, KEYBOARD_SPECIAL_KEY
 	je .return
-	; тут надо сохранять символ
+
+	cmp al, 0x80
+	jb .next_1
+	sub al, 0x80
+
+.next_1:
+	mov bl, 2
+	mul bl
+	mov bx, ax
+	xor byte [bx+key+0x7C00+1], 1
 
 .return:
-	mpop ax, esi
+	mpop ax, bx
 	popf
 	jmp int_EOI
 
-[BITS 32]
 protected_entry:
 	mov ax, 16
 	mov ds, ax
@@ -142,13 +159,9 @@ protected_entry:
 	mov ax, 24
 	mov es, ax
 
-	; Initialize Programmable Interrupt Controller (PIC)
-	iSr_master equ 0x20
-	iMr_master equ 0x21
-	   
-	iSr_slave equ 0xA0    
-	iMr_slave equ 0xA1
+	lidt [IDTR]
 
+	; Initialize Programmable Interrupt Controller (PIC)
 	; -------- master i8259A PIC initialization --------
 	mov al, 00010001b
 	out iSr_master, al
@@ -191,5 +204,3 @@ protected_entry:
 
 	; Включить маскируемые прерывания
 	sti
-
-	lidt [IDTR]
