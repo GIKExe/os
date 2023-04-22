@@ -1,6 +1,6 @@
 
-unsigned char *vidmem = (unsigned char*)0xB8000;
-unsigned char *keymem = (unsigned char*)0x7E00;
+unsigned char* vidmem = (unsigned char*)0xB8000;
+unsigned char* keymem = (unsigned char*)0x7E00;
 unsigned int cursor = 0;
 
 void print(unsigned char sumbol, unsigned char color)
@@ -17,15 +17,51 @@ void clear(void)
 	cursor = 0;
 }
 
-void prints(unsigned char *text)
+void prints(unsigned char* text)
 {
 	unsigned int i = 0;
 	while(text[i] != '\0') { print(text[i], 0x0F); ++i; }
 }
 
+void print_by_index(unsigned char* text, unsigned short len)
+{	
+	unsigned short index = 0;
+	while (len > 0)
+	{
+		print(text[index], 0x90);
+		++index;
+		--len;
+	}
+}
+
+unsigned char* dec_to_str(unsigned short num)
+{
+	unsigned char index = 4;
+	unsigned char str[5] = {48, 48, 48, 48, 48};
+
+	// while (num > 0 && index >= 0)
+	// {
+	// 	// str[index] = (unsigned char) num % 10 + 48;
+	// 	num = num / 10;
+	// 	--index;
+	// }
+	return(str);
+}
+
+unsigned char streq(unsigned char* str1, unsigned char* str2)
+{
+	unsigned short index;
+	if (str1[0] == '\0' && str2[0] == '\0') { return(1); }
+	for (index=0; str1[index] != '\0'; index++)
+	{ if (str1[index] != str2[index]) { return(0); } }
+	if (str2[index] != '\0') { return(0); }
+	return(1);
+}
+
+// Иван: успешно спизжено, но нихера не понимаю(
 static inline void outb(unsigned short port, unsigned char val)
 {
-    asm volatile ( "outb %0, %1" : : "a"(val), "Nd"(port) );
+	asm volatile ( "outb %0, %1" : : "a"(val), "Nd"(port) );
 }
 
 void update_cursor(void)
@@ -46,53 +82,60 @@ unsigned char* input(void)
 	unsigned char index;
 	unsigned char sumbol;
 	unsigned char counter;
+	unsigned char shift;
 
 	while(running)
 	{
 		index = 0;
-		while (index < 128)
+		// shift = 0;
+
+		// левый или правый шифт
+		// if ((keymem[168] > 0) | (keymem[216] > 0)) { shift = 1; }
+
+		while (index < 512)
 		{	
-			sumbol = keymem[index*2];
-			counter = keymem[index*2+1];
-			if (sumbol > 0)
-			{
-				// выполняется при нажитии клавиши
-				if (counter == 1)
+			counter = keymem[index];
+			sumbol = keymem[index + 2];
+
+			// выход если символ пустой
+			if (sumbol == 0) {break;}
+			
+			// выполняется при нажитии клавиши
+			if (counter == 1)
+			{	
+				keymem[index] = 3;
+
+				if (sumbol == 0x08) // BackSpace
 				{	
-					keymem[index*2+1] = 3;
-
-					if (sumbol == 0x08) // BackSpace
-					{	
-						if ((cursor >= 2) & (text_index > 0))
-						{
-							cursor = cursor - 2;
-							vidmem[cursor] = 0;
-							vidmem[cursor+1] = 0x0F;
-
-							--text_index;
-							text[text_index] = 0;
-						}
-					}
-					else if (sumbol == 0x0A) // Enter
+					if ((cursor >= 2) & (text_index > 0))
 					{
-						running = 0;
+						cursor = cursor - 2;
+						vidmem[cursor] = 0;
+						vidmem[cursor+1] = 0x0F;
+
+						--text_index;
+						text[text_index] = 0;
 					}
-					else if (text_index < 40)
-					{
-						text[text_index] = sumbol;
-						++text_index;
-						print(sumbol, 0x02);
-					}
-					update_cursor();
 				}
-
-				// выполняется при отпускании клавиши
-				if (counter == 2)
+				else if (sumbol == 0x0A) // Enter
 				{
-					keymem[index*2+1] = 0;
+					running = 0;
 				}
+				else if (text_index < 40)
+				{
+					text[text_index] = sumbol;
+					++text_index;
+					print(sumbol, 0x02);
+				}
+				update_cursor();
 			}
-			++index;
+
+			// выполняется при отпускании клавиши
+			if (counter == 2)
+			{
+				keymem[index] = 0;
+			}
+			index = index + 4;
 		}
 	}
 	return(text);
@@ -103,10 +146,20 @@ void kmain(void)
 	unsigned char* text;
 
 	prints("my first kernel 3.0 ");
-	text = input();
+	// text = input();
 	cursor = 160;
-	print('[', 4);
+
+	text = dec_to_str(0xFFFF);
 	prints(text);
-	print(']', 4);
+
+	// print_by_index(keymem, 512);
+	// print(keymem[2*4], 0x02);
+	// print(keymem[2*4+1], 0x02);
+	// print(keymem[2*4+2], 0x02);
+	// print(keymem[2*4+3], 0x02);
+
+	// print('[', 4);
+	// prints(text);
+	// print(']', 4);
 	return;
 }

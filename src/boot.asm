@@ -15,7 +15,7 @@ mov es, bx
 mov bx, 0x7E00 ; адрес на который будут записаны данные
 int 0x13
 
-jmp 0x7F00
+jmp 0x8000
 
 times 510 + $$ - $ db 0
 dw 0xAA55
