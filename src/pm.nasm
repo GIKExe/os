@@ -6,7 +6,8 @@ mov ds, ax
 mov es, ax
 mov ss, ax
 
-mov sp, protected_entry ; вершина стека
+; mov sp, protected_entry ; вершина стека
+mov sp, 0x7C00 ; вершина стека
 mov bp, sp
 	
 ; Включаем линию A20
@@ -124,32 +125,58 @@ int_EOI:
 	pop ax
 	iretd
 
-KEYBOARD_SPECIAL_KEY equ 0xE0
 
+KEYBOARD_SPECIAL_KEY equ 0xE0
 irq1_handler:
 	pushf
-	mpush ax, bx
-	del ax
-
+	push ax
+	push bx
 .main:
+	mov al, 0x20
+	out iSr_master, al
+	out iSr_slave, al
+
+	xor ax, ax
 	in al, 0x60
-	cmp al, KEYBOARD_SPECIAL_KEY
-	je .return
-
 	cmp al, 0x80
-	jb .next_1
+	jb .next
 	sub al, 0x80
-
-.next_1:
+.next:
 	mov bl, 2
 	mul bl
 	mov bx, ax
-	xor byte [bx+key+0x7C00+1], 1
-
+	xor byte [bx+0x7E01], 1
 .return:
-	mpop ax, bx
+	pop bx
+	pop ax
 	popf
-	jmp int_EOI
+	iretd
+
+; 	push ax
+; 	push bx
+; 	pushf
+; 	xor ax, ax
+
+; .main:
+; 	in al, 0x60
+; 	cmp al, KEYBOARD_SPECIAL_KEY
+; 	je .return
+
+; 	cmp al, 0x80
+; 	jb .next_1
+; 	sub al, 0x80
+
+; .next_1:
+; 	mov bl, 2
+; 	mul bl
+; 	mov bx, ax
+; 	xor byte [bx+key+0x7C00+1], 1
+
+; .return:
+; 	popf
+; 	pop bx
+; 	pop ax
+; 	jmp int_EOI+0x7C00
 
 protected_entry:
 	mov ax, 16

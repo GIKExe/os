@@ -51,6 +51,13 @@
 ; D=1 (размер элемента управления составляет 32 бита)
 ; DPL=0 (descriptor privilege level = 0)
 
+; %macro wIDT 2
+; 	dw (%2 - $$) & 0xFFFF
+; 	dw %1
+; 	db 0, 10001110b
+; 	dw (%2 - $$) >> 16
+; %endmacro
+
 %macro wIDT 2
 	dw (%2 - $$ + 0x7C00) & 0xFFFF
 	dw %1
