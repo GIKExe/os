@@ -15,42 +15,94 @@ void clear(void)
 	cursor = 0;
 }
 
-void print(unsigned char *text)
+void print(unsigned char sumbol, unsigned char color)
 {
-	unsigned int i = 0;
-	while(text[i] != '\0')         // в этом цикле строка записывается в видео память 
-	{
-		vidmem[cursor] = text[i];  // ascii отображение
-		vidmem[cursor+1] = 0x0F;
-		++i;
-		cursor = cursor + 2;
-	}
+	vidmem[cursor] = sumbol;
+	vidmem[cursor+1] = color;
+	cursor = cursor + 2;
 }
 
-void kmain(void)
+void prints(unsigned char *text)
+{
+	unsigned int i = 0;
+	while(text[i] != '\0') { print(text[i], 0x0F); ++i; }
+}
+
+static inline void outb(unsigned short port, unsigned char val)
+{
+    asm volatile ( "outb %0, %1" : : "a"(val), "Nd"(port) );
+}
+
+void update_cursor(void)
+{
+	unsigned short pos = cursor / 2;
+	outb(0x3D4, 0x0F);
+	outb(0x3D5, (unsigned char) (pos & 0xFF));
+	outb(0x3D4, 0x0E);
+	outb(0x3D5, (unsigned char) ((pos >> 8) & 0xFF));
+}
+
+unsigned short len(unsigned char* text)
+{
+	unsigned short size;
+	while (text[size] != '\0') { ++size; }
+	return(size);
+}
+
+unsigned char* chik(unsigned char* text)
 {	
+	unsigned short size = len(text);
+	text[size-1] = 0;
+	return(text);
+}
+
+unsigned char* input(void)
+{	
+	unsigned char running = 1;
+	unsigned char text[40];
+	unsigned char text_index = 0;
+
 	unsigned char index;
-	unsigned char *sumbol;
+	unsigned char sumbol;
 	unsigned char counter;
 
-	// unsigned char *test = "F";
-	// print(test);
-	print("my first kernel 3.0 ");
-
-	while(1)         
+	while(running)
 	{
 		index = 0;
 		while (index < 128)
 		{	
-			*sumbol = keymem[index*2];
+			sumbol = keymem[index*2];
 			counter = keymem[index*2+1];
-			if (sumbol[0] > 0)
+			if (sumbol > 0)
 			{
 				// выполняется при нажитии клавиши
 				if (counter == 1)
-				{
+				{	
 					keymem[index*2+1] = 3;
-					print(sumbol);
+
+					if (sumbol == 0x08) // BackSpace
+					{	
+						if ((cursor >= 2) & (text_index > 0))
+						{
+							cursor = cursor - 2;
+							vidmem[cursor] = sumbol;
+							vidmem[cursor+1] = 0x0F;
+
+							--text_index;
+							text[text_index] = 0;
+						}
+					}
+					else if (sumbol == 0x0A) // Enter
+					{
+						running = 0;
+					}
+					else if (text_index < 40)
+					{
+						text[text_index] = sumbol;
+						++text_index;
+						print(sumbol, 0x02);
+					}
+					update_cursor();
 				}
 
 				// выполняется при отпускании клавиши
@@ -62,5 +114,18 @@ void kmain(void)
 			++index;
 		}
 	}
+	return(text);
+}
+
+void kmain(void)
+{
+	unsigned char* text;
+
+	prints("my first kernel 3.0 ");
+	text = input();
+	cursor = 160;
+	print('[', 4);
+	prints(text);
+	print(']', 4);
 	return;
 }

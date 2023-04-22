@@ -50,7 +50,7 @@ key:
 	dw "p"
 	dw "["
 	dw "]"
-	dw 0 ; ↵ Enter
+	dw 0x0A ; ↵ Enter
 	dw 0 ; Левый Ctrl
 	dw "a"
 	dw "s"
