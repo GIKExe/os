@@ -3,23 +3,18 @@ unsigned char *vidmem = (unsigned char*)0xB8000;
 unsigned char *keymem = (unsigned char*)0x7E00;
 unsigned int cursor = 0;
 
-void clear(void)
-{	
-	cursor = 0;
-	while(cursor < 80 * 25 * 2)   // этот цикл очищает экран
-	{ 
-		vidmem[cursor] = ' ';     // пустой символ
-		vidmem[cursor+1] = 0x07;  // байт атрибутов
-		cursor = cursor + 2;
-	}
-	cursor = 0;
-}
-
 void print(unsigned char sumbol, unsigned char color)
 {
 	vidmem[cursor] = sumbol;
 	vidmem[cursor+1] = color;
 	cursor = cursor + 2;
+}
+
+void clear(void)
+{	
+	cursor = 0;
+	while(cursor < 4000) { print(0, 0x0F); }
+	cursor = 0;
 }
 
 void prints(unsigned char *text)
@@ -40,20 +35,6 @@ void update_cursor(void)
 	outb(0x3D5, (unsigned char) (pos & 0xFF));
 	outb(0x3D4, 0x0E);
 	outb(0x3D5, (unsigned char) ((pos >> 8) & 0xFF));
-}
-
-unsigned short len(unsigned char* text)
-{
-	unsigned short size;
-	while (text[size] != '\0') { ++size; }
-	return(size);
-}
-
-unsigned char* chik(unsigned char* text)
-{	
-	unsigned short size = len(text);
-	text[size-1] = 0;
-	return(text);
 }
 
 unsigned char* input(void)
@@ -85,7 +66,7 @@ unsigned char* input(void)
 						if ((cursor >= 2) & (text_index > 0))
 						{
 							cursor = cursor - 2;
-							vidmem[cursor] = sumbol;
+							vidmem[cursor] = 0;
 							vidmem[cursor+1] = 0x0F;
 
 							--text_index;
