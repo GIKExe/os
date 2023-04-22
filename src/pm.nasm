@@ -1,3 +1,133 @@
+dw 0             ; 0x7E00
+dw 0 ; Esc
+dw "1"
+dw "2"
+dw "3"
+dw "4"
+dw "5"
+dw "6"
+dw "7"
+dw "8"
+dw "9"
+dw "0"
+dw "-"
+dw "="
+dw 0x08 ; BackSpace
+dw 0 ; Tab ↹
+dw "q"
+dw "w"
+dw "e"
+dw "r"
+dw "t"
+dw "y"
+dw "u"
+dw "i"
+dw "o"
+dw "p"
+dw "["
+dw "]"
+dw 0x0A ; ↵ Enter
+dw 0 ; Левый Ctrl
+dw "a"
+dw "s"
+dw "d"
+dw "f"
+dw "g"
+dw "h"
+dw "j"
+dw "k"
+dw "l"
+dw ";"
+dw 0 ; " и '
+dw "`"
+dw 0 ; Левый ⇧ Shift
+dw "\"
+dw "z"
+dw "x"
+dw "c"
+dw "v"
+dw "b"
+dw "n"
+dw "m"
+dw ","
+dw "."
+dw "/"
+dw 0 ; Правый ⇧ Shift
+dw 0
+dw 0 ; Левый Alt
+dw 0 ; Space
+dw 0 ; ⇪ Caps Lock
+dw 0 ; F1
+dw 0 ; F2
+dw 0 ; F3
+dw 0 ; F4
+dw 0 ; F5
+dw 0 ; F6
+dw 0 ; F7
+dw 0 ; F8
+dw 0 ; F9
+dw 0 ; F10
+dw 0
+dw 0
+dw 0 ; Home
+dw 0x18 ; up
+dw 0 ; Page Up
+dw 0
+dw 0x1B ; left
+dw 0
+dw 0x1A ; right
+dw 0
+dw 0 ; End
+dw 0x19 ; down
+dw 0 ; Page Down
+dw 0 ; Insert
+dw 0 ; Delete
+dw 0
+dw 0
+dw 0
+dw 0 ; F11
+dw 0 ; F12
+dw 0
+dw 0
+dw 0 ; Левый ⊞ Win
+dw 0 ; Правый ⊞ Win
+dw 0 ; ≣ Menu
+dw 0 ; Power
+dw 0 ; Sleep
+dw 0
+dw 0
+dw 0
+dw 0 ; Wake
+dw 0
+dw 0
+dw 0
+dw 0
+dw 0
+dw 0
+dw 0
+dw 0
+dw 0
+dw 0
+dw 0
+dw 0
+dw 0
+dw 0
+dw 0
+dw 0
+dw 0
+dw 0
+dw 0
+dw 0
+dw 0
+dw 0
+dw 0
+dw 0
+dw 0
+dw 0
+dw 0
+dw 0
+
+; 0x7F00
 %include "macros.nasm"
 
 ; переход в защищённый режим (32 бита)
@@ -50,7 +180,6 @@ GDTR:
 	dd GDT
 
 
-db 'IDT'
 CODE_SELECTOR equ 0x8
 IDT:
 	dq 0 ; 0    #DE   Fault        Error code No     Divide Error
@@ -86,23 +215,23 @@ IDT:
 	dq 0 ; 30    -                                   Intel reserved. Do not use.
 	dq 0 ; 31    -                                   Intel reserved. Do not use.
 	; --- Master PIC ---
-	wIDT CODE_SELECTOR, int_EOI      ; 32    IRQ 0    System timer
+	wIDT CODE_SELECTOR, ric      ; 32    IRQ 0    System timer
 	wIDT CODE_SELECTOR, irq1_handler ; 33    IRQ 1    Keyboard controller
-	wIDT CODE_SELECTOR, int_EOI      ; 34    IRQ 2    Cascaded signals from IRQs 8–15 (from slave PIC)
-	wIDT CODE_SELECTOR, int_EOI      ; 35    IRQ 3    Serial port controller for serial port 2 (shared with serial port 4, if present)
-	wIDT CODE_SELECTOR, int_EOI      ; 36    IRQ 4    Serial port controller for serial port 1 (shared with serial port 3, if present)
-	wIDT CODE_SELECTOR, int_EOI      ; 37    IRQ 5    Parallel port 2 and 3  or  sound card
-	wIDT CODE_SELECTOR, int_EOI      ; 38    IRQ 6    Floppy disk controller
-	wIDT CODE_SELECTOR, int_EOI      ; 39    IRQ 7    Parallel port 1. It is used for printers or for any parallel port if a printer is not present.
+	wIDT CODE_SELECTOR, ric      ; 34    IRQ 2    Cascaded signals from IRQs 8–15 (from slave PIC)
+	wIDT CODE_SELECTOR, ric      ; 35    IRQ 3    Serial port controller for serial port 2 (shared with serial port 4, if present)
+	wIDT CODE_SELECTOR, ric      ; 36    IRQ 4    Serial port controller for serial port 1 (shared with serial port 3, if present)
+	wIDT CODE_SELECTOR, ric      ; 37    IRQ 5    Parallel port 2 and 3  or  sound card
+	wIDT CODE_SELECTOR, ric      ; 38    IRQ 6    Floppy disk controller
+	wIDT CODE_SELECTOR, ric      ; 39    IRQ 7    Parallel port 1. It is used for printers or for any parallel port if a printer is not present.
 	; --- Slave PIC ----
-	wIDT CODE_SELECTOR, int_EOI      ; 40    IRQ 8    Real-time clock (RTC)
-	wIDT CODE_SELECTOR, int_EOI      ; 41    IRQ 9    Advanced Configuration and Power Interface (ACPI) system control interrupt on Intel chipsets
-	wIDT CODE_SELECTOR, int_EOI      ; 42    IRQ 10   The Interrupt is left open for the use of peripherals
-	wIDT CODE_SELECTOR, int_EOI      ; 43    IRQ 11   The Interrupt is left open for the use of peripherals
-	wIDT CODE_SELECTOR, int_EOI      ; 44    IRQ 12   Mouse on PS/2 connector
-	wIDT CODE_SELECTOR, int_EOI      ; 45    IRQ 13   CPU co-processor  or  integrated floating point unit  or  inter-processor interrupt
-	wIDT CODE_SELECTOR, int_EOI      ; 46    IRQ 14   Primary ATA channel (ATA interface usually serves hard disk drives and CD drives)
-	wIDT CODE_SELECTOR, int_EOI      ; 47    IRQ 15   Secondary ATA channel
+	wIDT CODE_SELECTOR, ric      ; 40    IRQ 8    Real-time clock (RTC)
+	wIDT CODE_SELECTOR, ric      ; 41    IRQ 9    Advanced Configuration and Power Interface (ACPI) system control interrupt on Intel chipsets
+	wIDT CODE_SELECTOR, ric      ; 42    IRQ 10   The Interrupt is left open for the use of peripherals
+	wIDT CODE_SELECTOR, ric      ; 43    IRQ 11   The Interrupt is left open for the use of peripherals
+	wIDT CODE_SELECTOR, ric      ; 44    IRQ 12   Mouse on PS/2 connector
+	wIDT CODE_SELECTOR, ric      ; 45    IRQ 13   CPU co-processor  or  integrated floating point unit  or  inter-processor interrupt
+	wIDT CODE_SELECTOR, ric      ; 46    IRQ 14   Primary ATA channel (ATA interface usually serves hard disk drives and CD drives)
+	wIDT CODE_SELECTOR, ric      ; 47    IRQ 15   Secondary ATA channel
 
 IDTR:
 	dw $ - IDT - 1 ; 16-bit limit of the interrupt descriptor table
@@ -110,18 +239,17 @@ IDTR:
 
 
 [BITS 32]
-iSr_master equ 0x20
-iMr_master equ 0x21
-	   
-iSr_slave equ 0xA0    
-iMr_slave equ 0xA1
+master_command equ 0x20
+master_data    equ 0x21
 
-int_EOI:
+slave_command  equ 0xA0
+slave_data     equ 0xA1
+
+ric: ; Reset interrupt controllers
 	push ax
-	; Reset interrupt controllers
 	mov al, 0x20
-	out iSr_master, al
-	out iSr_slave, al
+	out master_command, al
+	out slave_command, al
 	pop ax
 	iretd
 
@@ -131,12 +259,8 @@ irq1_handler:
 	pushf
 	push ax
 	push bx
-.main:
-	mov al, 0x20
-	out iSr_master, al
-	out iSr_slave, al
-
 	xor ax, ax
+.main:
 	in al, 0x60
 	cmp al, 0x80
 	jb .next
@@ -150,33 +274,8 @@ irq1_handler:
 	pop bx
 	pop ax
 	popf
-	iretd
+	jmp ric
 
-; 	push ax
-; 	push bx
-; 	pushf
-; 	xor ax, ax
-
-; .main:
-; 	in al, 0x60
-; 	cmp al, KEYBOARD_SPECIAL_KEY
-; 	je .return
-
-; 	cmp al, 0x80
-; 	jb .next_1
-; 	sub al, 0x80
-
-; .next_1:
-; 	mov bl, 2
-; 	mul bl
-; 	mov bx, ax
-; 	xor byte [bx+key+0x7C00+1], 1
-
-; .return:
-; 	popf
-; 	pop bx
-; 	pop ax
-; 	jmp int_EOI+0x7C00
 
 protected_entry:
 	mov ax, 16
@@ -191,33 +290,33 @@ protected_entry:
 	; Initialize Programmable Interrupt Controller (PIC)
 	; -------- master i8259A PIC initialization --------
 	mov al, 00010001b
-	out iSr_master, al
+	out master_command, al
 	   
 	; Define interrupt vector for the 0th line of PIC
 	mov al, 0x20 ; (interrupt vector No 32)
-	out iMr_master, al
+	out master_data, al
 	   
 	; Bit mask defines the line of master i8259A to which slave i8259A is connected
 	mov al, 00000100b ; (line No 2)
-	out iMr_master, al
+	out master_data, al
 	   
 	mov al, 00000001b
-	out iMr_master, al
+	out master_data, al
 	   
 	; -------- slave i8259A PIC initialization ---------
 	mov al, 00010001b
-	out iSr_slave, al
+	out slave_command, al
 	   
 	; Define interrupt vector for the 0th line of PIC
 	mov al, 0x28 ; (interrupt vector No 40)
-	out iMr_slave, al
+	out slave_data, al
 	   
 	; Defines the line number through which slave i8259A is connected to master i8259A
 	mov al, 00000010b ; (line No 2)
-	out iMr_slave, al
+	out slave_data, al
 	   
 	mov al, 00000001b
-	out iMr_slave, al
+	out slave_data, al
 
 	; Включить прерывание клавиатуры
 	in al, 0x21
