@@ -8,5 +8,5 @@ extern kmain   ;kmain определена в C-файле
 
 start:
 	call kmain
-	hlt        ;остановка процессора
-	; jmp $
+	; hlt        ;остановка процессора
+	jmp $

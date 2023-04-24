@@ -3,6 +3,9 @@ unsigned char* vidmem = (unsigned char*)0xB8000;
 unsigned char* keymem = (unsigned char*)0x7E00;
 unsigned int cursor = 0;
 
+unsigned char left_shift = 0;
+unsigned char right_shift = 0;
+
 void print(unsigned char sumbol, unsigned char color)
 {
 	vidmem[cursor] = sumbol;
@@ -82,30 +85,31 @@ unsigned char* input(void)
 	unsigned char index;
 	unsigned char sumbol;
 	unsigned char counter;
-	unsigned char shift;
 
 	while(running)
 	{
 		index = 0;
-		// shift = 0;
-
-		// левый или правый шифт
-		// if ((keymem[168] > 0) | (keymem[216] > 0)) { shift = 1; }
-
 		while (index < 512)
 		{	
-			counter = keymem[index];
-			sumbol = keymem[index + 2];
-
 			// выход если символ пустой
-			if (sumbol == 0) {break;}
-			
+			if (left_shift || right_shift) { sumbol = keymem[index + 3]; }
+			else { sumbol = keymem[index + 2]; }
+
+			if (sumbol == 0) {index = index + 4; continue; }
+
 			// выполняется при нажитии клавиши
+			counter = keymem[index];
 			if (counter == 1)
 			{	
 				keymem[index] = 3;
 
-				if (sumbol == 0x08) // BackSpace
+				if (sumbol == 0x0A) // Enter
+				{
+					// prints("EXIT");
+					running = 0;
+					break;
+				}
+				else if (sumbol == 0x08) // BackSpace
 				{	
 					if ((cursor >= 2) & (text_index > 0))
 					{
@@ -117,9 +121,13 @@ unsigned char* input(void)
 						text[text_index] = 0;
 					}
 				}
-				else if (sumbol == 0x0A) // Enter
+				else if (sumbol == 0x0E)
 				{
-					running = 0;
+					left_shift = 1;
+				}
+				else if (sumbol == 0x0F)
+				{
+					right_shift = 1;
 				}
 				else if (text_index < 40)
 				{
@@ -134,6 +142,14 @@ unsigned char* input(void)
 			if (counter == 2)
 			{
 				keymem[index] = 0;
+				if (sumbol == 0x0E)
+				{
+					left_shift = 0;
+				}
+				else if (sumbol == 0x0F)
+				{
+					right_shift = 0;
+				}
 			}
 			index = index + 4;
 		}
@@ -146,20 +162,15 @@ void kmain(void)
 	unsigned char* text;
 
 	prints("my first kernel 3.0 ");
-	// text = input();
+	text = input();
 	cursor = 160;
 
-	text = dec_to_str(0xFFFF);
+	print('[', 4);
 	prints(text);
-
-	// print_by_index(keymem, 512);
-	// print(keymem[2*4], 0x02);
-	// print(keymem[2*4+1], 0x02);
-	// print(keymem[2*4+2], 0x02);
-	// print(keymem[2*4+3], 0x02);
-
-	// print('[', 4);
-	// prints(text);
-	// print(']', 4);
+	print(']', 4);
+	if (streq(text, "123"))
+	{
+		prints("ok");
+	}
 	return;
 }

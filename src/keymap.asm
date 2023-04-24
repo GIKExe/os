@@ -40,7 +40,7 @@ dw 0, "lL"
 dw 0, ";:"
 dw 0, 0x2227 ; " и '
 dw 0, "`~"
-dw 0, 0      ; Левый ⇧ Shift
+dw 0, 0x0E0E ; Левый ⇧ Shift
 dw 0, "\|"
 dw 0, "zZ"
 dw 0, "xX"
@@ -52,7 +52,7 @@ dw 0, "mM"
 dw 0, ",<"
 dw 0, ".>"
 dw 0, "/?"
-dw 0, 0      ; Правый ⇧ Shift
+dw 0, 0x0F0F ; Правый ⇧ Shift
 dw 0, 0
 dw 0, 0      ; Левый Alt
 dw 0, "  "   ; Space
