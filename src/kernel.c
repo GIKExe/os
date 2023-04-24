@@ -3,8 +3,9 @@ unsigned char* vidmem = (unsigned char*)0xB8000;
 unsigned char* keymem = (unsigned char*)0x7E00;
 unsigned int cursor = 0;
 
-unsigned char left_shift = 0;
-unsigned char right_shift = 0;
+// левый шифт
+// правый шифт
+unsigned char op = 0;
 
 void print(unsigned char sumbol, unsigned char color)
 {
@@ -91,13 +92,14 @@ unsigned char* input(void)
 		index = 0;
 		while (index < 512)
 		{	
-			// выход если символ пустой
-			if (left_shift || right_shift) { sumbol = keymem[index + 3]; }
+			
+			// переходим ко второму символу если нажат левый или правый шифт
+			if ((op & 0b1) || (op & 0b10)) { sumbol = keymem[index + 3]; }
 			else { sumbol = keymem[index + 2]; }
-
+			
+			// переходим к следующему элементу таблицы если символ пустой
 			if (sumbol == 0) {index = index + 4; continue; }
 
-			// выполняется при нажитии клавиши
 			counter = keymem[index];
 			if (counter == 1)
 			{	
@@ -105,7 +107,6 @@ unsigned char* input(void)
 
 				if (sumbol == 0x0A) // Enter
 				{
-					// prints("EXIT");
 					running = 0;
 					break;
 				}
@@ -121,13 +122,13 @@ unsigned char* input(void)
 						text[text_index] = 0;
 					}
 				}
-				else if (sumbol == 0x0E)
+				else if (sumbol == 0x0E) // L shift
 				{
-					left_shift = 1;
+					op = op | 0b1;
 				}
-				else if (sumbol == 0x0F)
+				else if (sumbol == 0x0F) // R shift
 				{
-					right_shift = 1;
+					op = op | 0b10;
 				}
 				else if (text_index < 40)
 				{
@@ -142,13 +143,13 @@ unsigned char* input(void)
 			if (counter == 2)
 			{
 				keymem[index] = 0;
-				if (sumbol == 0x0E)
+				if (sumbol == 0x0E)  // L shift
 				{
-					left_shift = 0;
+					op = op & 0b11111110;
 				}
-				else if (sumbol == 0x0F)
+				else if (sumbol == 0x0F) // R shift
 				{
-					right_shift = 0;
+					op = op & 0b11111101;
 				}
 			}
 			index = index + 4;
@@ -165,9 +166,6 @@ void kmain(void)
 	text = input();
 	cursor = 160;
 
-	print('[', 4);
-	prints(text);
-	print(']', 4);
 	if (streq(text, "123"))
 	{
 		prints("ok");
