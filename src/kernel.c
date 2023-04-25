@@ -27,7 +27,7 @@ void prints(unsigned char* text)
 	while(text[i] != '\0') { print(text[i], 0x0F); ++i; }
 }
 
-void print_by_index(unsigned char* text, unsigned short len)
+void printi(unsigned char* text, unsigned short len)
 {	
 	unsigned short index = 0;
 	while (len > 0)
@@ -36,20 +36,6 @@ void print_by_index(unsigned char* text, unsigned short len)
 		++index;
 		--len;
 	}
-}
-
-unsigned char* dec_to_str(unsigned short num)
-{
-	unsigned char index = 4;
-	unsigned char str[5] = {48, 48, 48, 48, 48};
-
-	// while (num > 0 && index >= 0)
-	// {
-	// 	// str[index] = (unsigned char) num % 10 + 48;
-	// 	num = num / 10;
-	// 	--index;
-	// }
-	return(str);
 }
 
 unsigned char streq(unsigned char* str1, unsigned char* str2)
@@ -62,7 +48,6 @@ unsigned char streq(unsigned char* str1, unsigned char* str2)
 	return(1);
 }
 
-// Иван: успешно спизжено, но нихера не понимаю(
 static inline void outb(unsigned short port, unsigned char val)
 {
 	asm volatile ( "outb %0, %1" : : "a"(val), "Nd"(port) );
@@ -87,6 +72,9 @@ unsigned char* input(void)
 	unsigned char sumbol;
 	unsigned char counter;
 
+	unsigned char x;
+	unsigned char y;
+
 	while(running)
 	{
 		index = 0;
@@ -106,7 +94,11 @@ unsigned char* input(void)
 				keymem[index] = 3;
 
 				if (sumbol == 0x0A) // Enter
-				{
+				{	
+					y = cursor/160;
+					// x = cursor%160;
+					cursor = (y+1)*160;
+
 					running = 0;
 					break;
 				}
@@ -164,7 +156,6 @@ void kmain(void)
 
 	prints("my first kernel 3.0 ");
 	text = input();
-	cursor = 160;
 
 	if (streq(text, "123"))
 	{
