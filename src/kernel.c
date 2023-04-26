@@ -1,3 +1,4 @@
+#include "string.c"
 
 unsigned char* vidmem = (unsigned char*)0xB8000;
 unsigned char* keymem = (unsigned char*)0x7E00;
@@ -7,17 +8,46 @@ unsigned int cursor = 0;
 // правый шифт
 unsigned char op = 0;
 
+static inline void outb(unsigned short port, unsigned char val)
+{
+	asm volatile ( "outb %0, %1" : : "a"(val), "Nd"(port) );
+}
+
+void update_cursor(void)
+{
+	unsigned short pos = cursor / 2;
+	outb(0x3D4, 0x0F);
+	outb(0x3D5, (unsigned char) (pos & 0xFF));
+	outb(0x3D4, 0x0E);
+	outb(0x3D5, (unsigned char) ((pos >> 8) & 0xFF));
+}
+
+void new_line(void)
+{
+	// unsigned char x = 0;
+	unsigned char y = 0;
+	y = cursor/160;
+	// x = cursor%160;
+	cursor = (y+1)*160;
+}
+
 void print(unsigned char sumbol, unsigned char color)
 {
 	vidmem[cursor] = sumbol;
 	vidmem[cursor+1] = color;
 	cursor = cursor + 2;
+	update_cursor();
 }
 
 void clear(void)
 {	
 	cursor = 0;
-	while(cursor < 4000) { print(0, 0x0F); }
+	while(cursor < 4000)
+	{
+		vidmem[cursor] = 0;
+		vidmem[cursor+1] = 0x0F;
+		cursor = cursor + 2;
+	}
 	cursor = 0;
 }
 
@@ -38,32 +68,11 @@ void printi(unsigned char* text, unsigned short len)
 	}
 }
 
-unsigned char streq(unsigned char* str1, unsigned char* str2)
-{
-	unsigned short index;
-	if (str1[0] == '\0' && str2[0] == '\0') { return(1); }
-	for (index=0; str1[index] != '\0'; index++)
-	{ if (str1[index] != str2[index]) { return(0); } }
-	if (str2[index] != '\0') { return(0); }
-	return(1);
-}
-
-static inline void outb(unsigned short port, unsigned char val)
-{
-	asm volatile ( "outb %0, %1" : : "a"(val), "Nd"(port) );
-}
-
-void update_cursor(void)
-{
-	unsigned short pos = cursor / 2;
-	outb(0x3D4, 0x0F);
-	outb(0x3D5, (unsigned char) (pos & 0xFF));
-	outb(0x3D4, 0x0E);
-	outb(0x3D5, (unsigned char) ((pos >> 8) & 0xFF));
-}
-
-unsigned char* input(void)
+unsigned char* input(unsigned char len)
 {	
+	if (len > 40) {len = 40;}
+	len = 40 - len;
+
 	unsigned char running = 1;
 	unsigned char text[40];
 	unsigned char text_index = 0;
@@ -71,9 +80,6 @@ unsigned char* input(void)
 	unsigned char index;
 	unsigned char sumbol;
 	unsigned char counter;
-
-	unsigned char x;
-	unsigned char y;
 
 	while(running)
 	{
@@ -95,9 +101,7 @@ unsigned char* input(void)
 
 				if (sumbol == 0x0A) // Enter
 				{	
-					y = cursor/160;
-					// x = cursor%160;
-					cursor = (y+1)*160;
+					new_line();
 
 					running = 0;
 					break;
@@ -109,6 +113,7 @@ unsigned char* input(void)
 						cursor = cursor - 2;
 						vidmem[cursor] = 0;
 						vidmem[cursor+1] = 0x0F;
+						update_cursor();
 
 						--text_index;
 						text[text_index] = 0;
@@ -122,13 +127,12 @@ unsigned char* input(void)
 				{
 					op = op | 0b10;
 				}
-				else if (text_index < 40)
+				else if (text_index + len < 40)
 				{
 					text[text_index] = sumbol;
 					++text_index;
 					print(sumbol, 0x02);
 				}
-				update_cursor();
 			}
 
 			// выполняется при отпускании клавиши
@@ -153,13 +157,44 @@ unsigned char* input(void)
 void kmain(void)
 {
 	unsigned char* text;
-
+	unsigned char* str;
+	unsigned short index;
 	prints("my first kernel 3.0 ");
-	text = input();
 
-	if (streq(text, "123"))
-	{
-		prints("ok");
+	while (1)
+	{		
+		clear();
+		prints("> ");
+		index = 0;
+		text = input(40);
+
+		// print(count(text, ' ')+48, 0x0E);
+		prints(hex_to_str(0xFFFF));
+
+		// str = split(text, ' ', &index);
+		// prints(str);
+		// new_line();
+		// str = split(text, ' ', &index);
+		// prints(str);
+		// new_line();
+		// str = split(text, ' ', &index);
+		// prints(str);
+
+		input(0);
+		// if (streq(str, "print"))
+		// {
+		// 	str = split(text, ' ', &index);
+		// 	if (streq(str, "mem"))
+		// 	{
+		// 		str = split(text, ' ', &index);
+		// 		if (streq(str, "0"))
+		// 		{
+		// 			printi((unsigned char*)0x0, 512);
+		// 			input(0);
+		// 		}
+		// 	}
+		// }
 	}
+	
 	return;
 }

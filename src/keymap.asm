@@ -26,7 +26,7 @@ dw 0, "oO"
 dw 0, "pP"
 dw 0, "[{"
 dw 0, "]}"
-dw 0, 0x000A ; ↵ Enter
+dw 0, 0x0A0A ; ↵ Enter
 dw 0, 0      ; Левый Ctrl
 dw 0, "aA"
 dw 0, "sS"
@@ -70,15 +70,15 @@ dw 0, 0      ; F10
 dw 0, 0
 dw 0, 0
 dw 0, 0      ; Home
-dw 0, 0x0018 ; up
+dw 0, 0x1818 ; up
 dw 0, 0      ; Page Up
 dw 0, 0
-dw 0, 0x001B ; left
+dw 0, 0x1B1B ; left
 dw 0, 0
-dw 0, 0x001A ; right
+dw 0, 0x1A1A ; right
 dw 0, 0
 dw 0, 0      ; End
-dw 0, 0x0019 ; down
+dw 0, 0x1919 ; down
 dw 0, 0      ; Page Down
 dw 0, 0      ; Insert
 dw 0, 0      ; Delete
