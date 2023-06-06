@@ -1,12 +1,13 @@
+#pragma once
 
-unsigned short len(unsigned char* str)
+unsigned short strlen(unsigned char* str)
 {
 	unsigned short index = 0;
 	while (str[index] != 0) { ++index; }
 	return(index);
 }
 
-unsigned char streq(unsigned char* str1, unsigned char* str2)
+unsigned char strcmp(unsigned char* str1, unsigned char* str2)
 {
 	unsigned short index;
 	if (str1[0] == '\0' && str2[0] == '\0') { return(1); }
@@ -36,12 +37,3 @@ unsigned char* hex_to_str(unsigned int num)
 	}
 	return(str);
 }
-
-// пример использования split
-// unsigned short index = 0;
-// unsigned char* str = "Hello World";
-// unsigned char* str2;
-
-// str2 = split(str, ' ', &index);
-// str2 хранит "Hello"
-// index хранит 6
