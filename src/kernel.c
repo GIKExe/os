@@ -18,8 +18,8 @@ void kmain(void)
 		if (strcmp(text, "ping"))
 		{
 			print("pong");
-			new_line();
 		}
+		new_line();
 
 	}
 	

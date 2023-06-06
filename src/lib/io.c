@@ -22,6 +22,7 @@ void clear(void)
 	}
 	cursor = 0;
 }
+
 void new_line(void)
 {
 	unsigned short pos = cursor / 2;
@@ -29,6 +30,7 @@ void new_line(void)
 	outb(0x3D5, (unsigned char) (pos & 0xFF));
 	outb(0x3D4, 0x0E);
 	outb(0x3D5, (unsigned char) ((pos >> 8) & 0xFF));
+	cursor = ((pos / 80)+1)*2;
 }
 
 void print_symbol(unsigned char sumbol, unsigned char color)
