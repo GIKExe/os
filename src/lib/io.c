@@ -13,7 +13,7 @@ static inline void outb(unsigned short port, unsigned char val)
 
 void clear(void)
 {
-    cursor = 0;
+	cursor = 0;
 	while(cursor < 4000)
 	{
 		vidmem[cursor] = 0;
@@ -23,36 +23,37 @@ void clear(void)
 	cursor = 0;
 }
 
-void new_line(void)
+void update_cursor(void)
 {
 	unsigned short pos = cursor / 2;
 	outb(0x3D4, 0x0F);
 	outb(0x3D5, (unsigned char) (pos & 0xFF));
 	outb(0x3D4, 0x0E);
 	outb(0x3D5, (unsigned char) ((pos >> 8) & 0xFF));
-	cursor = ((pos / 80)+1)*2;
 }
 
-void print_symbol(unsigned char sumbol, unsigned char color)
+void new_line(void)
+{	
+	cursor = (cursor / 160 + 1) * 160;
+}
+
+void prints(unsigned char sumbol, unsigned char color)
 {
-    vidmem[cursor] = sumbol;
+	vidmem[cursor] = sumbol;
 	vidmem[cursor+1] = color;
 	cursor = cursor + 2;
-	new_line();
+	update_cursor();
 }
-void print_color(unsigned char* text, unsigned char color)
+
+void print(unsigned char* text, unsigned char color)
 {
-    unsigned int i = 0;
-	while(text[i] != '\0') { print_symbol(text[i], color); ++i; }
-}
-void print(unsigned char* text)
-{
-    print_color(text, 0x0F);
+	unsigned short i = 0;
+	while(text[i] != '\0') { prints(text[i], color); ++i; }
 }
 
 unsigned char* input(unsigned char len)
 {
-    if (len > 40) {len = 40;}
+	if (len > 40) {len = 40;}
 	len = 40 - len;
 
 	bool running = true;
@@ -83,7 +84,7 @@ unsigned char* input(unsigned char len)
 
 				if (sumbol == 0x0A) // Enter
 				{	
-					new_line();
+					update_cursor();
 
 					running = false;
 					break;
@@ -95,7 +96,7 @@ unsigned char* input(unsigned char len)
 						cursor = cursor - 2;
 						vidmem[cursor] = 0;
 						vidmem[cursor+1] = 0x0F;
-						new_line();
+						update_cursor();
 
 						--text_index;
 						text[text_index] = 0;
@@ -113,7 +114,7 @@ unsigned char* input(unsigned char len)
 				{
 					text[text_index] = sumbol;
 					++text_index;
-					print_symbol(sumbol, 0x02);
+					prints(sumbol, 0x0F);
 				}
 			}
 

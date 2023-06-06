@@ -6,22 +6,22 @@ void kmain(void)
 	unsigned char* text;
 	unsigned char* str;
 	unsigned short index;
-	print("Kernel 3.0");
+	print("Kernel 3.0", 0x2);
 	new_line();
 
 	while (1)
 	{
-		print("> ");
+		print("> ", 0xE);
 		index = 0;
 		text = input(40);
+		new_line();
 
 		if (strcmp(text, "ping"))
 		{
-			print("pong");
+			print("pong", 0xF);
+			new_line();
 		}
-		new_line();
-
+		
 	}
-	
 	return;
 }
