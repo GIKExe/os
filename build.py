@@ -5,85 +5,83 @@ import os
 import sys
 import subprocess
 
+
 # --- Настройки ---
+NASM_EXE = "prog/nasm.exe"
+NASM_SRC = "src/bootloader.nasm"
+OUT_DIR = "out"
+BOOTLOADER_FILE = f"{OUT_DIR}/bootloader.bin"
+KERNEL_FILE = f"{OUT_DIR}/KERNEL.BIN"
+KERNEL_SRC = "src/kernel.nasm"
 IMAGE_NAME = "floppy.img"
-# Ваш скомпилированный загрузчик (ровно 512 байт)
-BOOTLOADER_FILE = "src/bootloader"
-# Ваше ядро
-KERNEL_FILE = "ass.bin"
-# 1.44 МБ (стандартный размер дискеты)
-IMAGE_SIZE = 1440 * 1024
+IMAGE_SIZE = 1440 * 1024  # 1.44 МБ
 
 
-def create_blank_image():
-	print(f"[*] Создание пустого образа размером {IMAGE_SIZE / 1024} КБ: {IMAGE_NAME}")
-	with open(IMAGE_NAME, "wb") as f:
-		f.write(b'\x00' * IMAGE_SIZE)
-
-
-def format_fat12():
-	print("[*] Форматирование образа в FAT12 с помощью mtools...")
-	# -i: файл образа, -f 1440: геометрия 1.44МБ, -v: метка тома
-	cmd = ["mformat", "-i", IMAGE_NAME, "-f", "1440", "-v", "MYOS_DISK"]
+def run_cmd(cmd, desc):
+	"""Выполняет команду и выводит минималистичный статус."""
+	print(f"[*] {desc}...", end=" ", flush=True)
 	result = subprocess.run(cmd, capture_output=True, text=True)
 	if result.returncode != 0:
-		print(f"[!] Ошибка форматирования: {result.stderr}")
+		print("ОШИБКА")
+		print(result.stderr.strip())
 		sys.exit(1)
-	print("[+] Образ успешно отформатирован.")
-
-
-def write_bootloader():
-	if not os.path.exists(BOOTLOADER_FILE):
-		print(f"[!] Файл загрузчика '{BOOTLOADER_FILE}' не найден. Пропуск записи загрузчика.")
-		print("[*] Образ останется со стандартным загрузочным сектором от mtools.")
-		return
-
-	print(f"[*] Запись загрузчика из '{BOOTLOADER_FILE}' в сектор 0 (MBR/VBR)...")
-	with open(BOOTLOADER_FILE, "rb") as bf:
-		boot_code = bf.read(512)
-
-	if len(boot_code) > 512:
-		print("[!] Предупреждение: Загрузчик больше 512 байт. Он будет обрезан.")
-		boot_code = boot_code[:512]
-	elif len(boot_code) < 512:
-		boot_code = boot_code.ljust(512, b'\x00')
-
-	# Проверка сигнатуры загрузочного сектора (0x55AA)
-	if boot_code[510:512] != b'\x55\xaa':
-		print("[!] Предупреждение: Загрузчик не заканчивается на стандартную сигнатуру 0x55AA.")
-
-	# Перезаписываем самые первые 512 байт образа
-	with open(IMAGE_NAME, "r+b") as img:
-		img.seek(0)
-		img.write(boot_code)
-	
-	print("[+] Загрузчик успешно записан.")
-	print("[!] ВАЖНО: Убедитесь, что ваш 'bootloader.bin' содержит валидный BPB (BIOS Parameter Block)")
-	print("[!] для FAT12 в начале сектора. Иначе файловая система может считаться повреждённой.")
-
-
-def copy_kernel():
-	if not os.path.exists(KERNEL_FILE):
-		print(f"[!] Файл ядра '{KERNEL_FILE}' не найден. Пропуск копирования ядра.")
-		return
-
-	print(f"[*] Копирование '{KERNEL_FILE}' в файловую систему образа...")
-	# mcopy автоматически преобразует имена файлов в формат 8.3 (например, KERNEL.BIN)
-	cmd = ["mcopy", "-i", IMAGE_NAME, KERNEL_FILE, "::/"]
-	result = subprocess.run(cmd, capture_output=True, text=True)
-	if result.returncode != 0:
-		print(f"[!] Ошибка копирования ядра: {result.stderr}")
-		sys.exit(1)
-	print("[+] Ядро успешно скопировано.")
+	print("OK")
 
 
 def main():
-	print("=== Генератор загрузочного образа ===")
-	create_blank_image()
-	format_fat12()
-	write_bootloader()
-	copy_kernel()
-	print("\n[+] Образ \"floppy.img\" готов.")
+	print(f"=== Сборка {IMAGE_NAME} ===")
+	
+	# 1.1 Компиляция загрузчика
+	os.makedirs(OUT_DIR, exist_ok=True)
+	run_cmd(
+		[NASM_EXE, "-f", "bin", NASM_SRC, "-o", BOOTLOADER_FILE],
+		"Компиляция bootloader"
+	)
+	
+	# 1.2 Компиляция ядра
+	os.makedirs(OUT_DIR, exist_ok=True)
+	run_cmd(
+		[NASM_EXE, "-f", "bin", KERNEL_SRC, "-o", KERNEL_FILE],
+		"Компиляция kernel"
+	)
+
+	# 2. Создание и форматирование образа
+	with open(IMAGE_NAME, "wb") as f:
+		f.write(b'\x00' * IMAGE_SIZE)
+	
+	run_cmd(
+		["mformat", "-i", IMAGE_NAME, "-f", "1440", "-v", "MYOS_DISK"],
+		"Форматирование FAT12"
+	)
+
+	# 3. Запись загрузчика в сектор 0
+	with open(BOOTLOADER_FILE, "rb") as bf:
+		boot_code = bf.read(512)
+	
+	if len(boot_code) < 512:
+		boot_code = boot_code.ljust(512, b'\x00')
+	elif len(boot_code) > 512:
+		print("[!] Внимание: Загрузчик обрезан до 512 байт")
+		boot_code = boot_code[:512]
+		
+	if boot_code[510:512] != b'\x55\xaa':
+		print("[!] Внимание: Отсутствует сигнатура 0x55AA")
+
+	with open(IMAGE_NAME, "r+b") as img:
+		img.seek(0)
+		img.write(boot_code)
+	print("[*] Запись загрузчика (MBR/VBR)... OK")
+
+	# 4. Копирование ядра
+	if os.path.exists(KERNEL_FILE):
+		run_cmd(
+			["mcopy", "-i", IMAGE_NAME, KERNEL_FILE, "::/"],
+			"Копирование ядра"
+		)
+	else:
+		print(f"[!] {KERNEL_FILE} не найден, пропуск.")
+
+	print(f"[+] Готово: {IMAGE_NAME}")
 
 
 if __name__ == "__main__":
