@@ -240,6 +240,7 @@ newread:
 	push bx
 	push cx
 	push dx
+	mov al, 18 ; МАКСИМУМ 9 КиБ !!!
 	int 0x13
 	pop dx
 	pop cx
