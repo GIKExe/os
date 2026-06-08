@@ -74,12 +74,16 @@ move_player:
 	je .exit
 	cmp al, 'R'
 	jne .next1
-	mov byte [player.color], 0x04
+	mov byte [player.color], 0x0C
 .next1:
 	cmp al, 'G'
 	jne .next2
-	mov byte [player.color], 0x02
+	mov byte [player.color], 0x0A
 .next2:
+	cmp al, 'B'
+	jne .next3
+	mov byte [player.color], 0x0B
+.next3:
 	call clear_pos
 	mov [player.x], dl
 	mov [player.y], dh
@@ -231,7 +235,7 @@ cursor:
 
 
 player:
-.color db 0x02
+.color db 0x0E
 .symbol db 'P'
 	 db 0
 .x db 2
@@ -250,21 +254,21 @@ map:
   db '#                                                                              #'
   db '#                                                                              #'
   db '#                                                                              #'
-  db '###########################@@##############################@@###################'
+  db '#######################################@@#######################################'
   db '#                                                                              #'
   db '#                                                                              #'
   db '#                                                                              #'
   db '#      R                   G                     R           G                 #'
   db '#                                                                              #'
   db '#                                                                              #'
-  db '#                G                                                             #'
-  db '#                                      R                                       #'
+  db '#                G                                                  B          #'
+  db '#                          B           R                                       #'
   db '#                                                               R              #'
   db '#                     G                           G                            #'
   db '#                                                              R               #'
-  db '#                                         R                                    #'
+  db '#                             B           R                                    #'
   db '#           R                                                                  #'
-  db '#                        G                                                     #'
+  db '#                        G                      B                              #'
   db '#                                                                              #'
   db '#                                                          R        G          #'
   db '#          G                      R                                            #'
