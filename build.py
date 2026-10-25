@@ -1,5 +1,6 @@
 # MSYS2 UCRT64
 # pacman -S mingw-w64-ucrt-x86_64-mtools
+# или любой аналог с mcopy, mformat
 
 import os
 import sys
